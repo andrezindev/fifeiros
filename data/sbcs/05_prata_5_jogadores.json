@@ -1,0 +1,10 @@
+{
+  "name": "Upgrade de Pratas (5 jogadores)",
+  "formation": ["ST", "CM", "CM", "CB", "GK"],
+  "requirements": [
+    {"type": "count", "filter": {"quality": "silver"}, "op": "min", "value": 3},
+    {"type": "count", "filter": {"quality": "bronze"}, "op": "max", "value": 1},
+    {"type": "distinct", "attribute": "club", "op": "min", "value": 3}
+  ],
+  "options": {"locked_players": ["c010"]}
+}

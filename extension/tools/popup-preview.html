@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Preview do popup</title>
+  <link rel="stylesheet" href="../src/popup/popup.css">
+  <style>body { margin: 20px auto; outline: 1px dashed #8888; }</style>
+</head>
+<body>
+<script>
+  // Simula a API chrome.* com dados falsos, só para ver o visual do popup.
+  const item = (i, extra = {}) => ({ id: i, assetId: 1000 + i, itemType: "player", rating: 70 + (i % 20),
+    preferredPosition: ["GK", "CB", "CM", "ST"][i % 4], possiblePositions: [], leagueId: 13, nation: 14,
+    teamid: 10 + (i % 5), rareflag: i % 2, untradeable: i % 3 === 0, ...extra });
+  const club = Object.fromEntries(Array.from({ length: 4218 }, (_, i) => [i, item(i)]));
+  const state = {
+    club, unassigned: { 9001: item(9001) }, storage: {}, names: { 1000: "Marc Guéhi" },
+    challenges: { 555: { challengeId: 555, name: "Liga e Nação", formation: "f433", elgReq: [
+      { type: "SCOPE", eligibilitySlot: 1, eligibilityValue: 0 }, { type: "TEAM_RATING", eligibilitySlot: 1, eligibilityValue: 80 },
+      { type: "SCOPE", eligibilitySlot: 2, eligibilityValue: 0 }, { type: "LEAGUE_ID", eligibilitySlot: 2, eligibilityValue: 13, count: 3 },
+      { type: "SCOPE", eligibilitySlot: 3, eligibilityValue: 1 }, { type: "SAME_CLUB_COUNT", eligibilitySlot: 3, eligibilityValue: 3 },
+      { type: "FIRST_OWNER_PLAYERS_COUNT", eligibilitySlot: 4, eligibilityValue: 2 } ] } },
+    squads: {}, currentChallengeId: 555,
+    loader: { running: false, pages: 2, items: 147, finishedAt: Date.now() },
+    lastSolution: { challengeId: 555, solution: { squad: [{}], team_rating: 79, team_chemistry: 18, total_cost: 1550 } },
+    templateInfo: { paginable: true },
+    rate: { used: 6, max: 40, windowMin: 10, at: Date.now() },
+    stats: { completed: { 50: 2 } },
+  };
+  window.chrome = {
+    runtime: {
+      getManifest: () => ({ version: "0.3.0" }),
+      sendMessage: async (msg) => (msg.cmd === "solverHealth" ? { ok: true, version: "0.1.0", busy: false } : {}),
+    },
+    storage: {
+      local: {
+        get: async (keys) => (keys === null || keys === undefined ? state : Object.fromEntries([].concat(keys).map((k) => [k, state[k]]))),
+        set: async (o) => Object.assign(state, o),
+        clear: async () => {},
+      },
+      onChanged: { addListener() {} },
+    },
+    tabs: {
+      query: async () => [{ id: 1, url: "https://www.ea.com/ea-sports-fc/ultimate-team/web-app/" }],
+      sendMessage: async () => ({ ok: true }),
+    },
+  };
+  (async () => {
+    const html = await (await fetch("../src/popup/popup.html")).text();
+    document.body.innerHTML = new DOMParser().parseFromString(html, "text/html").body.innerHTML;
+    await import("../src/popup/popup.js");
+  })();
+</script>
+</body>
+</html>

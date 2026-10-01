@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>FIFEIROS</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo">F</span>
+      <div>
+        <h1>FIFEIROS</h1>
+        <span class="sub">Solver de DMEs</span>
+      </div>
+    </div>
+    <span class="pill" id="solver-pill"><span id="solver-status" class="dot" title="verificando…"></span><span id="solver-label">Solver</span></span>
+  </header>
+
+  <p id="tab-warning" class="alert warn" hidden>Abra o Web App do EA FC nesta aba para usar a extensão.</p>
+
+  <!-- DME aberto + ação principal -->
+  <section class="card">
+    <div class="card-head">
+      <h2>DME aberto</h2>
+    </div>
+    <p id="sbc-name" class="sbc-name muted">Nenhum desafio capturado. Abra um desafio no Web App.</p>
+    <ul id="sbc-reqs" class="chips"></ul>
+    <ul id="sbc-warnings" class="warnings"></ul>
+    <div class="actions">
+      <button id="btn-solve" class="btn primary grow">Resolver DME aberto</button>
+      <button id="btn-panel" class="btn">Painel</button>
+    </div>
+    <p id="solve-result" class="small"></p>
+    <p id="solver-msg" class="small muted"></p>
+  </section>
+
+  <!-- Clube -->
+  <section class="card">
+    <div class="card-head">
+      <h2>Clube</h2>
+    </div>
+    <div class="tiles">
+      <div class="tile"><b id="n-club">0</b><span>no clube</span></div>
+      <div class="tile"><b id="n-unassigned">0</b><span>não atrib.</span></div>
+      <div class="tile"><b id="n-storage">0</b><span>armazém</span></div>
+      <div class="tile"><b id="n-names">0</b><span>nomes</span></div>
+    </div>
+    <div class="actions">
+      <button id="btn-load" class="btn grow">Carregar clube inteiro</button>
+      <button id="btn-stop" class="btn danger" hidden>Parar</button>
+    </div>
+    <p id="loader-status" class="small muted"></p>
+    <p class="hint">Antes, abra <b>Clube › Jogadores</b> sem filtros e os <b>Não atribuídos</b>.</p>
+  </section>
+
+  <!-- Opções -->
+  <details id="opts" class="card fold">
+    <summary><h2>Opções do solver</h2><span class="chev">›</span></summary>
+    <div class="form">
+      <label>Priorizar
+        <select id="opt-priority">
+          <option value="cost">Menor custo (padrão)</option>
+          <option value="rating">Menor overall primeiro</option>
+          <option value="protect">Proteger cartas boas</option>
+        </select></label>
+
+      <div class="range-block">
+        <div class="range-head"><span>Faixa de overall</span><span id="range-text" class="muted">45 a 99</span></div>
+        <div class="dual">
+          <div class="dual-track"><span id="range-fill"></span></div>
+          <input id="opt-min-range" type="range" min="45" max="99" step="1" aria-label="Overall mínimo">
+          <input id="opt-max-range" type="range" min="45" max="99" step="1" aria-label="Overall máximo">
+        </div>
+        <div class="minmax">
+          <label>Mín.<input id="opt-min" type="number" min="45" max="99"></label>
+          <label>Máx.<input id="opt-max" type="number" min="45" max="99"></label>
+        </div>
+      </div>
+
+      <div class="group-title">Filtrar por</div>
+      <label class="switch"><input id="opt-replace" type="checkbox"><span class="track"></span> Substituir atletas já no DME</label>
+      <label class="switch"><input id="opt-untradeable" type="checkbox"><span class="track"></span> Somente não negociáveis</label>
+      <label class="switch"><input id="opt-active" type="checkbox"><span class="track"></span> Excluir atletas do elenco ativo</label>
+      <label class="switch"><input id="opt-special" type="checkbox"><span class="track"></span> Usar cartas de evento</label>
+      <label class="switch disabled" title="Precisa da lista do mercado (em breve)"><input id="opt-market" type="checkbox" disabled><span class="track"></span> Usar atletas de conceito <span class="soon">em breve</span></label>
+      <button id="btn-reset-opts" class="btn small ghost">Restaurar padrões</button>
+    </div>
+  </details>
+
+  <!-- Ritmo -->
+  <section class="meter">
+    <div class="meter-bar"><span id="rate-bar"></span></div>
+    <p id="rate-info" class="small muted"></p>
+  </section>
+
+  <footer class="foot">
+    <div class="actions">
+      <button id="btn-club" class="btn small" title="Exportar club.json">club.json</button>
+      <button id="btn-sbc" class="btn small" title="Exportar sbc.json">sbc.json</button>
+      <button id="btn-diag" class="btn small" title="Exportar diagnóstico">Diagnóstico</button>
+    </div>
+    <button id="btn-clear" class="btn small ghost-danger">Limpar dados</button>
+  </footer>
+  <p id="msg" class="small muted msg"></p>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

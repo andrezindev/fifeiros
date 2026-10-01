@@ -1,0 +1,7 @@
+{
+  "name": "Desafio de Overall 86",
+  "formation": ["GK", "RB", "CB", "CB", "LB", "RM", "CM", "CM", "LM", "ST", "ST"],
+  "requirements": [
+    {"type": "min_team_rating", "value": 86}
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "solution.schema.json",
+  "title": "Solução do solver",
+  "description": "O que a extensão recebe nas Fases 3 e 4 para mostrar/preencher o time.",
+  "type": "object",
+  "required": ["status", "sbc", "squad", "valid", "reason", "diagnostics"],
+  "properties": {
+    "status": {"enum": ["OPTIMAL", "FEASIBLE", "INFEASIBLE", "UNKNOWN", "MODEL_INVALID", "INVALID"]},
+    "sbc": {"type": "string"},
+    "squad": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slot", "slot_position", "player_id", "name", "rating", "chemistry", "category", "coin_cost", "needs_purchase"],
+        "properties": {
+          "slot": {"type": "integer"},
+          "slot_position": {"type": "string"},
+          "player_id": {"type": "string"},
+          "definition_id": {"type": "string"},
+          "name": {"type": "string"},
+          "rating": {"type": "integer"},
+          "position": {"type": "string"},
+          "in_position": {"type": "boolean"},
+          "chemistry": {"type": "integer", "minimum": 0, "maximum": 3},
+          "league": {"type": "string"},
+          "nation": {"type": "string"},
+          "club": {"type": "string"},
+          "rarity": {"type": "string"},
+          "category": {"enum": ["untradeable_duplicate", "untradeable", "tradeable", "market"]},
+          "coin_cost": {"type": "integer"},
+          "needs_purchase": {"type": "boolean"}
+        }
+      }
+    },
+    "team_rating": {"type": ["integer", "null"]},
+    "team_chemistry": {"type": ["integer", "null"]},
+    "total_cost": {"type": ["integer", "null"]},
+    "purchase_cost": {"type": ["integer", "null"]},
+    "to_buy": {"type": "array"},
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description", "ok", "actual"],
+        "properties": {"description": {"type": "string"}, "ok": {"type": "boolean"}, "actual": {"type": "integer"}}
+      }
+    },
+    "valid": {"type": "boolean"},
+    "reason": {"type": ["string", "null"]},
+    "diagnostics": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "solve_time_s": {"type": "number"}
+  }
+}

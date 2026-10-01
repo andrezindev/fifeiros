@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "club.schema.json",
+  "title": "Clube (ou mercado) do Ultimate Team",
+  "description": "Contrato entre a extensão (Fase 2) e o solver. market.json usa o mesmo formato.",
+  "type": "object",
+  "required": ["players"],
+  "properties": {
+    "players": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "overall", "position", "league", "nation", "club"],
+        "properties": {
+          "id": {"type": "string", "description": "id único da carta (item id)"},
+          "definition_id": {"type": "string", "description": "id do jogador; cartas da mesma pessoa compartilham"},
+          "name": {"type": "string"},
+          "overall": {"type": "integer", "minimum": 1, "maximum": 99},
+          "position": {"$ref": "#/$defs/position"},
+          "alt_positions": {"type": "array", "items": {"$ref": "#/$defs/position"}},
+          "league": {"type": "string"},
+          "nation": {"type": "string"},
+          "club": {"type": "string"},
+          "rarity": {"enum": ["common", "rare", "special", "comum", "raro", "especial"]},
+          "tradeable": {"type": "boolean"},
+          "untradeable": {"type": "boolean"},
+          "is_duplicate": {"type": "boolean"},
+          "unassigned": {"type": "boolean"},
+          "market_price": {"type": "integer", "minimum": 0},
+          "is_icon": {"type": "boolean"},
+          "is_hero": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "position": {"enum": ["GK", "RB", "LB", "CB", "CDM", "CM", "CAM", "RM", "LM", "RW", "LW", "ST"]}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Química Total",
+  "formation": ["GK", "RB", "CB", "CB", "LB", "CDM", "CM", "CAM", "RW", "ST", "LW"],
+  "requirements": [
+    {"type": "min_team_chemistry", "value": 25},
+    {"type": "min_player_chemistry", "value": 1},
+    {"type": "count", "filter": {"quality": "gold"}, "op": "min", "value": 9},
+    {"type": "min_team_rating", "value": 79}
+  ]
+}

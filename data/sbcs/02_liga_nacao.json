@@ -1,0 +1,12 @@
+{
+  "name": "Liga e Nação",
+  "formation": ["GK", "RB", "CB", "CB", "LB", "CM", "CDM", "CM", "RW", "ST", "LW"],
+  "requirements": [
+    {"type": "count", "filter": {"league": "Premier League"}, "op": "min", "value": 3},
+    {"type": "count", "filter": {"nation": "Spain"}, "op": "min", "value": 2},
+    {"type": "distinct", "attribute": "nation", "op": "min", "value": 5},
+    {"type": "distinct", "attribute": "league", "op": "max", "value": 4},
+    {"type": "same", "attribute": "club", "op": "max", "value": 3},
+    {"type": "min_team_rating", "value": 80}
+  ]
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Preview do painel</title>
+  <style>body { margin: 0; height: 100vh; background: linear-gradient(135deg, #0b1d3a, #1b4d5c); font-family: system-ui; color: #fff; } p { padding: 20px; }</style>
+</head>
+<body>
+<p>Simulação do Web App (o painel real aparece por cima da página da EA).</p>
+<script>
+  // chrome.* falso com uma solução real (clube do usuário, DME "Destino à Glória").
+  const P = (slot_position, name, rating, position, in_position, chemistry, category, coin_cost = 0) =>
+    ({ slot_position, name, rating, position, in_position, chemistry, category, coin_cost });
+  const store = {
+    currentChallengeId: 49,
+    lastSolution: {
+      challengeId: 49,
+      solution: {
+        sbc: "Desafio 2 Destino à Glória", status: "OPTIMAL", solve_time_s: 0.43, warnings: [],
+        squad: [
+          P("GK", "Kepa", 78, "GK", true, 2, "untradeable"),
+          P("CB", "Uğurcan Çakır", 80, "GK", false, 0, "untradeable"),
+          P("CB", "Emre Can", 81, "CB", true, 3, "untradeable"),
+          P("CB", "Álvaro Carreras", 81, "LB", true, 3, "untradeable"),
+          P("RM", "Endrick", 79, "ST", true, 2, "untradeable"),
+          P("CM", "Conan Noonan", 62, "CAM", false, 0, "untradeable_duplicate"),
+          P("CM", "Eduardo Camavinga", 81, "CM", true, 2, "untradeable"),
+          P("LM", "Daniel Svensson", 79, "LB", true, 2, "untradeable"),
+          P("RW", "Noni Madueke", 80, "RW", true, 1, "tradeable", 650),
+          P("ST", "Maximilian Beier", 81, "CAM", true, 3, "untradeable"),
+          P("LW", "Barış Alper Yılmaz", 80, "LM", true, 0, "market", 900),
+        ],
+        team_rating: 79, team_chemistry: 18, total_cost: 1550,
+        to_buy: [{ name: "Barış Alper Yılmaz", rating: 80, price: 900 }],
+        requirements: [
+          { description: "Time completo (11 jogadores)", ok: true, actual: 11 },
+          { description: "Jogadores da mesma liga: mín. 3", ok: true, actual: 3 },
+          { description: "Jogadores do mesmo clube: máx. 4", ok: true, actual: 3 },
+          { description: "Clubes diferentes: máx. 5", ok: true, actual: 5 },
+          { description: "Química do time: mín. 16", ok: true, actual: 18 },
+        ],
+      },
+    },
+  };
+  window.chrome = {
+    storage: {
+      local: { get: async (keys) => Object.fromEntries([].concat(keys).map((k) => [k, store[k]])) },
+      onChanged: { addListener() {} },
+    },
+    runtime: { onMessage: { addListener() {} }, sendMessage: async () => ({}), getURL: (p) => `/${p}` },
+  };
+</script>
+<script src="../src/panel/panel.js"></script>
+<script>window.__fifeirosPanelShow();</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "FIFEIROS – Leitor de DMEs",
+  "version": "0.8.0",
+  "description": "Lê o clube e os requisitos de DMEs do Web App do EA FC, resolve com o solver local e preenche a escalação (nunca envia).",
+  "permissions": ["storage", "unlimitedStorage", "activeTab"],
+  "host_permissions": ["http://127.0.0.1:8127/*"],
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.ea.com/*ultimate-team/web-app*"],
+      "js": ["src/page-hook.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.ea.com/*ultimate-team/web-app*"],
+      "js": ["src/content.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.ea.com/*ultimate-team/web-app*"],
+      "js": ["src/panel/panel.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/fill-plan.js", "src/normalize/*.js"],
+      "matches": ["https://www.ea.com/*"]
+    }
+  ],
+  "action": {
+    "default_title": "FIFEIROS",
+    "default_popup": "src/popup/popup.html"
+  }
+}

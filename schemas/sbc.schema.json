@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sbc.schema.json",
+  "title": "Requisitos de um DME (SBC)",
+  "type": "object",
+  "required": ["formation"],
+  "properties": {
+    "name": {"type": "string"},
+    "formation": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 11,
+      "items": {"$ref": "club.schema.json#/$defs/position"},
+      "description": "Posição de cada slot; o tamanho do time é o tamanho desta lista"
+    },
+    "squad_size": {"type": "integer", "minimum": 1, "maximum": 11},
+    "ea": {
+      "type": "object",
+      "description": "Metadados do Web App (preenchidos pela extensão)",
+      "properties": {
+        "challengeId": {"type": ["integer", "string", "null"]},
+        "setId": {"type": ["integer", "string", "null"]},
+        "formation": {"type": ["string", "null"]},
+        "slotIndices": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 0, "maximum": 10},
+          "description": "Slot da EA de cada posição de 'formation' (slots bloqueados já removidos)"
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Requisitos que a extensão não conseguiu traduzir"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "value"],
+        "properties": {
+          "type": {"enum": ["min_team_rating", "min_team_chemistry", "min_player_chemistry", "count", "distinct", "same"]},
+          "value": {"type": "integer", "minimum": 0},
+          "op": {"enum": ["min", "max", "exact"]},
+          "attribute": {"enum": ["league", "nation", "club"]},
+          "filter": {
+            "type": "object",
+            "properties": {
+              "league": {"$ref": "#/$defs/strOrList"},
+              "nation": {"$ref": "#/$defs/strOrList"},
+              "club": {"$ref": "#/$defs/strOrList"},
+              "rarity": {"$ref": "#/$defs/strOrList"},
+              "quality": {"$ref": "#/$defs/strOrList"},
+              "rare": {"type": "boolean"},
+              "min_rating": {"type": "integer"},
+              "max_rating": {"type": "integer"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "locked_players": {"type": "array", "items": {"type": "string"}},
+        "rating_range": {
+          "type": "object",
+          "properties": {"min": {"type": "integer"}, "max": {"type": "integer"}},
+          "additionalProperties": false
+        },
+        "allow_special": {"type": "boolean"},
+        "allow_tradeable": {"type": "boolean"},
+        "allow_market": {"type": "boolean"},
+        "untradeable_value": {"type": "number", "minimum": 0, "maximum": 1},
+        "time_limit_s": {"type": "number", "exclusiveMinimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "strOrList": {"oneOf": [{"type": "string"}, {"type": "array", "items": {"type": "string"}}]}
+  }
+}

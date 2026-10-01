@@ -1,0 +1,14 @@
+{
+  "name": "Quebra-cabeça Misto",
+  "formation": ["GK", "RB", "CB", "CB", "LB", "CDM", "CDM", "CAM", "RW", "LW", "ST"],
+  "requirements": [
+    {"type": "min_team_rating", "value": 83},
+    {"type": "min_team_chemistry", "value": 18},
+    {"type": "count", "filter": {"league": "LALIGA EA SPORTS"}, "op": "exact", "value": 2},
+    {"type": "distinct", "attribute": "league", "op": "min", "value": 4},
+    {"type": "same", "attribute": "nation", "op": "max", "value": 4},
+    {"type": "count", "filter": {"min_rating": 85}, "op": "min", "value": 2},
+    {"type": "count", "filter": {"quality": "gold"}, "op": "exact", "value": 11}
+  ],
+  "options": {"time_limit_s": 20}
+}
