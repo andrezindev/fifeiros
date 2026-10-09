@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FIFEIROS – Leitor de DMEs",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Lê o clube e os requisitos de DMEs do Web App do EA FC, resolve com o solver local e preenche a escalação (nunca envia).",
   "permissions": ["storage", "unlimitedStorage", "activeTab"],
   "host_permissions": ["http://127.0.0.1:8127/*"],

@@ -16,7 +16,7 @@ export const DEFAULT_OPTIONS = {
   only_untradeable: false, // "Somente não negociáveis"
   exclude_active: false,   // "Excluir atletas do elenco ativo"
   allow_special: false,    // cartas de evento
-  allow_market: false,     // "Usar atletas de conceito" (em breve)
+  allow_market: false,     // "Usar atletas de conceito": completa com jogadores para comprar
   time_limit_s: 10,
 };
 
@@ -36,6 +36,7 @@ export function toSolverOptions(o) {
     untradeable_value: uv,
     allow_special: Boolean(opts.allow_special),
     allow_tradeable: allowTradeable,
+    allow_market: Boolean(opts.allow_market),
     time_limit_s: opts.time_limit_s,
   };
 }

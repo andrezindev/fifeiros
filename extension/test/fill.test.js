@@ -26,10 +26,10 @@ test("recusa solução de outro DME", () => {
   assert.match(buildFillPlan(okResult(), { ...okState(), currentChallengeId: 49 }).error, /outro DME/);
 });
 
-test("recusa quando precisa comprar", () => {
+test("solução só com conceito em parte: não recusa por causa de compras", () => {
   const r = okResult();
   r.solution.to_buy = [{ name: "X" }];
-  assert.match(buildFillPlan(r, okState()).error, /compras/);
+  assert.equal(buildFillPlan(r, okState()).error, undefined);
 });
 
 test("recusa quando o DME tem requisito não entendido", () => {

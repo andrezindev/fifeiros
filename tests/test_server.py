@@ -102,3 +102,31 @@ def test_merge_options_priority():
     sbc = {"formation": ["ST"], "options": {"rating_range": {"min": 70}, "locked_players": ["a"]}}
     merged = merge_options(sbc, {"max_rating": 85, "locked_players": ["b"], "allow_special": True, "min_rating": None})
     assert merged["options"] == {"rating_range": {"min": 70, "max": 85}, "locked_players": ["a", "b"], "allow_special": True}
+
+
+def _p(pid, rating, league, price, **kw):
+    return {"id": pid, "name": pid, "overall": rating, "position": "CM", "league": league,
+            "nation": "N", "club": "C" + pid, "rarity": "common", "market_price": price, **kw}
+
+
+def test_conceito_completa_o_que_falta_com_o_mais_barato():
+    """Clube sem jogadores suficientes da liga pedida: completa com conceito barato."""
+    from sbc_solver.server import handle_solve
+
+    club = [_p(f"c{i}", 70, "L1", 300, untradeable=True) for i in range(10)]
+    market = [
+        _p("conceito-1", 75, "L2", 900, definition_id="d1", price_estimated=False),
+        _p("conceito-2", 75, "L2", 400, definition_id="d2"),
+        _p("conceito-3", 75, "L2", 5000, definition_id="d3"),
+    ]
+    sbc = {"name": "t", "formation": ["CM"] * 11,
+           "requirements": [{"type": "count", "filter": {"league": "L2"}, "op": "min", "value": 2}]}
+    sol = handle_solve({"club": {"players": club}, "market": {"players": market}, "sbc": sbc,
+                        "options": {"allow_market": True}})
+    assert sol["valid"]
+    bought = sorted(b["name"] for b in sol["to_buy"])
+    assert bought == ["conceito-1", "conceito-2"]  # os 2 mais baratos, não o de 5000
+    # Sem a opção: não há solução.
+    sol = handle_solve({"club": {"players": club}, "market": {"players": market}, "sbc": sbc,
+                        "options": {"allow_market": False}})
+    assert not sol["squad"]

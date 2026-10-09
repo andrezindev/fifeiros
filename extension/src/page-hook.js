@@ -78,6 +78,12 @@
     return true;
   }
 
+  // Jogadores "conceito" (que você NÃO tem) nunca podem entrar no clube: o solver
+  // os usaria como se fossem seus. Vão para uma lista separada (compras).
+  const isConceptItem = (it) => it?.concept === true || it?.concept === 1 || /concept/i.test(String(it?.itemState ?? ""));
+  const isConceptRequest = (info) =>
+    /concept/i.test(String(info?.url ?? "")) || (typeof info?.body === "string" && /concept/i.test(info.body));
+
   // Qualquer requisição do Web App à EA leva o cabeçalho de sessão (X-UT-SID).
   // Guardamos a última (só na memória da página) para o preenchimento funcionar
   // logo após abrir um DME, sem precisar abrir o clube antes.
@@ -119,13 +125,24 @@
     }
     if (!data) return;
 
+    // Qualquer resposta com jogadores: separa os de conceito; buscas desconhecidas
+    // ficam registradas (sem cabeçalhos) para descobrirmos o formato.
+    const found = Array.isArray(data.itemData) ? data.itemData : null;
+    const conceptRequest = isConceptRequest(info);
+    if (found && c.kind !== "unassigned" && c.kind !== "storage") {
+      const concept = found.filter((it) => conceptRequest || isConceptItem(it));
+      if (concept.length) post({ type: "capture", kind: "concept", items: concept, request: describeTemplate(info) });
+      if (c.kind === "other") post({ type: "itemSearchSeen", path: c.path, request: describeTemplate(info), sample: found.slice(0, 2) });
+    }
+
     if (c.kind === "names") {
       post({ type: "capture", kind: "names", data: compactNames(data) });
     } else if (c.kind === "club") {
       // Só uma busca SEM filtro serve de modelo para "Carregar clube inteiro"
       // (o Web App também busca um jogador específico, com defId, ao montar DMEs).
-      if (info.method !== "OPTIONS" && isFullClubSearch(info)) clubTemplate = { ...info };
-      post({ type: "capture", kind: "club", items: data.itemData ?? [], templateInfo: describeTemplate(clubTemplate) });
+      if (info.method !== "OPTIONS" && !conceptRequest && isFullClubSearch(info)) clubTemplate = { ...info };
+      const owned = conceptRequest ? [] : (data.itemData ?? []).filter((it) => !isConceptItem(it));
+      post({ type: "capture", kind: "club", items: owned, templateInfo: describeTemplate(clubTemplate) });
     } else if (c.kind === "unassigned" || c.kind === "storage") {
       post({ type: "capture", kind: c.kind, items: data.itemData ?? [] });
     } else if (c.kind === "challenges") {
@@ -326,7 +343,7 @@
           break;
         }
         const data = await res.json();
-        const items = data.itemData ?? [];
+        const items = (data.itemData ?? []).filter((it) => !isConceptItem(it));
         loader.pages += 1;
         loader.items += items.length;
         post({ type: "capture", kind: "club", items, fromLoader: true });
@@ -413,6 +430,52 @@
       return false;
     });
     return found;
+  }
+
+  // A extensão só fica sabendo do DME aberto pela rede quando o Web App baixa a
+  // escalação; se o app usar o cache, ela não fica sabendo. Por isso a TELA manda:
+  // lemos (sem alterar) qual DME está na memória das telas abertas.
+  let screenReaderWorks = false; // já achou um DME alguma vez nesta página?
+
+  /** { known:false } = não dá para ler; { known:true, challengeId|null, placedIds } */
+  function readOpenChallenge() {
+    if (typeof window.getAppMain !== "function") return { known: false };
+    let found = null;
+    walkControllers((obj) => {
+      for (const k of safe(() => Object.keys(obj), [])) {
+        if (!/challenge/i.test(k)) continue;
+        const v = safe(() => obj[k]);
+        const id = Number(safe(() => v?.id));
+        if (v && typeof v === "object" && Number.isInteger(id) && id > 0 && safe(() => v.squad)) {
+          // Só os 11 de campo; slots vazios viram "0" e saem.
+          const placedIds = squadItemIds(v.squad).slice(0, 11).filter((x) => x > 0).map(String);
+          found = { challengeId: id, placedIds };
+          return true;
+        }
+      }
+      return false;
+    });
+    if (found) screenReaderWorks = true;
+    // Se o leitor nunca funcionou nesta página, "não achei" não quer dizer "nenhum DME".
+    if (!found && !screenReaderWorks) return { known: false };
+    return { known: true, challengeId: null, placedIds: [], ...(found ?? {}) };
+  }
+
+  let lastOpenKey = null;
+  function postOpenChallenge(force = false) {
+    const open = readOpenChallenge();
+    const key = JSON.stringify(open);
+    if (!force && key === lastOpenKey) return;
+    lastOpenKey = key;
+    post({ type: "openChallenge", ...open, at: Date.now() });
+  }
+
+  // Acompanha a troca de DME sem nenhuma requisição (só lê a memória da página).
+  if (typeof window.setInterval === "function") {
+    window.setInterval(() => {
+      if (window.document?.visibilityState === "hidden") return;
+      safe(() => postOpenChallenge());
+    }, 1500);
   }
 
   // No FC 27 cada slot é um UTSquadSlotEntity com o jogador em `_item` (UTItemEntity).
@@ -586,6 +649,10 @@
         factories: safe(() => Object.keys(window.factories ?? {}).slice(0, 60), null),
       },
       sbcServiceMethods: safe(() => methodNames(window.services?.SBC), null),
+      // Para achar a busca de jogadores "conceito" e os preços.
+      clubServiceMethods: safe(() => methodNames(window.services?.Club), null),
+      itemServiceMethods: safe(() => methodNames(window.services?.Item), null),
+      transferMarketMethods: safe(() => methodNames(window.services?.TransferMarket), null),
       itemRepositoryMethods: safe(() => methodNames(window.repositories?.Item), null),
       itemFactoryMethods: safe(() => methodNames(window.factories?.Item), null),
       squadFactoryMethods: safe(() => methodNames(window.factories?.Squad), null),
@@ -694,6 +761,13 @@
     const invalid = validateSlots(slots);
     if (invalid) return fail(`Não preenchi: ${invalid}.`);
     if (!authTemplate()) return fail("Saia e entre de novo no DME (a extensão precisa ver o Web App falar com a EA) e tente outra vez.");
+    // Nunca salva num DME que não é o da tela.
+    const open = readOpenChallenge();
+    if (open.known && open.challengeId !== challengeId) {
+      return fail(open.challengeId === null
+        ? "Abra o DME no Web App antes de preencher."
+        : "O DME aberto na tela não é o desta solução. Clique em Resolver de novo com o DME certo aberto.");
+    }
     const wait = FILL_COOLDOWN_MS - (Date.now() - lastFillAt);
     if (wait > 0) return fail(`Espere ${Math.ceil(wait / 1000)}s antes de preencher de novo.`);
 
@@ -751,6 +825,7 @@
     if (event.source !== window || !msg || msg[TAG] !== true || msg.dir !== "toPage") return;
     if (msg.cmd === "loadClub") loadClub(msg.options);
     if (msg.cmd === "fillSquad") fillSquad(msg.options);
+    if (msg.cmd === "syncChallenge") postOpenChallenge(true);
     if (msg.cmd === "stopLoad" && loader) loader.stop = true;
     if (msg.cmd === "ping") {
       post({ type: "pong", templateInfo: describeTemplate(clubTemplate), loader, squadSaveKnown: Boolean(squadSaveTemplate) });

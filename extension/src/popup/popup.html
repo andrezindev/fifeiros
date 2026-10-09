@@ -44,7 +44,7 @@
       <div class="tile"><b id="n-club">0</b><span>no clube</span></div>
       <div class="tile"><b id="n-unassigned">0</b><span>não atrib.</span></div>
       <div class="tile"><b id="n-storage">0</b><span>armazém</span></div>
-      <div class="tile"><b id="n-names">0</b><span>nomes</span></div>
+      <div class="tile" title="Jogadores conceito (para comprar) vistos no Web App"><b id="n-concept">0</b><span>conceito</span></div>
     </div>
     <div class="actions">
       <button id="btn-load" class="btn grow">Carregar clube inteiro</button>
@@ -83,7 +83,8 @@
       <label class="switch"><input id="opt-untradeable" type="checkbox"><span class="track"></span> Somente não negociáveis</label>
       <label class="switch"><input id="opt-active" type="checkbox"><span class="track"></span> Excluir atletas do elenco ativo</label>
       <label class="switch"><input id="opt-special" type="checkbox"><span class="track"></span> Usar cartas de evento</label>
-      <label class="switch disabled" title="Precisa da lista do mercado (em breve)"><input id="opt-market" type="checkbox" disabled><span class="track"></span> Usar atletas de conceito <span class="soon">em breve</span></label>
+      <label class="switch" title="Se faltar jogador no clube, completa com o conceito mais barato (você compra à mão)"><input id="opt-market" type="checkbox"><span class="track"></span> Usar atletas de conceito</label>
+      <p id="concept-hint" class="hint"></p>
       <button id="btn-reset-opts" class="btn small ghost">Restaurar padrões</button>
     </div>
   </details>

@@ -5,9 +5,11 @@
   const TAG = "__fifeiros";
   const MAX_LOG = 200;
   const SAMPLE_ITEMS = 5;
+  const MAX_CONCEPT = 8000;
 
   const state = {
     club: {}, unassigned: {}, storage: {}, names: {},
+    concept: {},        // jogadores "conceito" vistos no Web App (para comprar), por definição
     challenges: {}, squads: {}, currentChallengeId: null,
     sbcHub: null,       // { squadPlayerItemIds }: jogadores presos em DMEs não enviados
     squadSaves: [],     // últimos "salvar escalação" vistos (formato, para a Fase 4)
@@ -19,6 +21,7 @@
     lastSubmit: null,   // último envio detectado
     rate: null,         // uso do limite de ritmo da extensão
     activeSquadIds: [], // jogadores do elenco ativo (opção "Excluir atletas do elenco ativo")
+    screen: null,       // DME que está NA TELA agora: { challengeId, placedIds, at }
     loader: null, templateInfo: null,
     diag: { requests: [], samples: {}, hookErrors: [] },
     updatedAt: null,
@@ -38,17 +41,22 @@
   // Grava só as chaves que mudaram (o clube pode ter milhares de itens).
   let saveTimer = null;
   const dirty = new Set();
+  function writeDirty() {
+    clearTimeout(saveTimer);
+    state.updatedAt = Date.now();
+    const patch = { updatedAt: state.updatedAt };
+    for (const k of dirty) patch[k] = state[k];
+    dirty.clear();
+    return Promise.resolve(chrome.storage.local.set(patch));
+  }
   function save(...keys) {
     keys.forEach((k) => dirty.add(k));
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      state.updatedAt = Date.now();
-      const patch = { updatedAt: state.updatedAt };
-      for (const k of dirty) patch[k] = state[k];
-      dirty.clear();
-      chrome.storage.local.set(patch);
-    }, 400);
+    saveTimer = setTimeout(writeDirty, 400);
   }
+
+  // Quem pediu "qual DME está na tela?" (Resolver) espera a resposta da página.
+  const screenWaiters = [];
 
   function sample(kind, value) {
     if (!state.diag.samples[kind]) state.diag.samples[kind] = value;
@@ -67,6 +75,8 @@
     sbcHub: ["sbcHub"], squadSaveSeen: ["squadSaves", "lastSquadIds"],
     fillResult: ["lastFill", "lastSquadIds", "diag"], probe: ["probe"],
     challengeAction: CONSUME_KEYS, rate: ["rate"], activeSquad: ["activeSquadIds"],
+    openChallenge: ["screen", "currentChallengeId"],
+    concept: ["concept", "diag"], itemSearchSeen: ["diag"],
   };
 
   // ---------- Fase 5: depois de um envio, tira do clube os jogadores gastos ----------
@@ -98,6 +108,10 @@
   function apply(msg) {
     applyMessage(msg);
     save(...(KEYS_BY_MSG[msg.type === "capture" ? msg.kind : msg.type] ?? []));
+    if (msg.type === "openChallenge" && screenWaiters.length) {
+      const waiters = screenWaiters.splice(0);
+      writeDirty().then(() => waiters.forEach((w) => w({ known: Boolean(msg.known), challengeId: msg.challengeId ?? null })));
+    }
   }
 
   function applyMessage(msg) {
@@ -120,6 +134,15 @@
         state.unassigned = {};
         upsertItems(state.unassigned, msg.items);
         sample(k, msg.items.slice(0, SAMPLE_ITEMS));
+      } else if (k === "concept") {
+        for (const it of msg.items ?? []) {
+          const key = it?.assetId ?? it?.definitionId ?? it?.resourceId ?? it?.id;
+          if (key !== undefined && key !== null) state.concept[key] = it;
+        }
+        // Teto para não crescer sem limite.
+        const keys = Object.keys(state.concept);
+        if (keys.length > MAX_CONCEPT) for (const k2 of keys.slice(0, keys.length - MAX_CONCEPT)) delete state.concept[k2];
+        state.diag.samples.concept = { request: msg.request ?? null, items: (msg.items ?? []).slice(0, 2) };
       } else if (k === "challenges") {
         for (const c of msg.challenges) {
           if (c?.challengeId === undefined) continue;
@@ -138,6 +161,17 @@
       } else if (k === "activeSquad") {
         state.activeSquadIds = msg.ids ?? [];
       }
+    } else if (msg.type === "openChallenge") {
+      // A tela é a fonte da verdade sobre qual DME está aberto.
+      if (msg.known) {
+        state.screen = { challengeId: msg.challengeId ?? null, placedIds: (msg.placedIds ?? []).map(String), at: msg.at ?? Date.now() };
+        state.currentChallengeId = msg.challengeId ?? null;
+      }
+    } else if (msg.type === "itemSearchSeen") {
+      // Buscas de jogadores que a extensão ainda não conhece (diagnóstico).
+      state.diag.samples.itemSearches ??= {};
+      const seen = state.diag.samples.itemSearches;
+      if (seen[msg.path] || Object.keys(seen).length < 10) seen[msg.path] = { request: msg.request, sample: msg.sample, at: Date.now() };
     } else if (msg.type === "probe") {
       state.probe = msg.report;
     } else if (msg.type === "challengeAction") {
@@ -186,9 +220,22 @@
     if (msg?.cmd === "loadClub" || msg?.cmd === "stopLoad" || msg?.cmd === "ping") {
       window.postMessage({ [TAG]: true, dir: "toPage", cmd: msg.cmd, options: msg.options }, window.location.origin);
       reply({ ok: true });
+    } else if (msg?.cmd === "syncChallenge") {
+      // Antes de resolver: pergunta à página qual DME está na tela e espera gravar.
+      let done = false;
+      const finish = (r) => {
+        if (done) return;
+        done = true;
+        reply(r);
+      };
+      screenWaiters.push(finish);
+      setTimeout(() => finish({ known: false, timeout: true }), 1500);
+      window.postMessage({ [TAG]: true, dir: "toPage", cmd: "syncChallenge" }, window.location.origin);
+      return true;
     } else if (msg?.cmd === "clear") {
-      for (const k of ["club", "unassigned", "storage", "challenges", "squads"]) state[k] = {};
+      for (const k of ["club", "unassigned", "storage", "challenges", "squads", "concept"]) state[k] = {};
       state.currentChallengeId = null;
+      state.screen = null;
       state.sbcHub = null;
       state.squadSaves = [];
       state.lastSquadIds = {};

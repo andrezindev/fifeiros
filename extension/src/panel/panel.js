@@ -99,6 +99,8 @@
     .tag.dup { background: rgba(46,230,182,.10); color: #8ff0d4; border-color: rgba(46,230,182,.3); }
     .tag.untr { background: rgba(76,141,255,.10); color: #a9c4ff; border-color: rgba(76,141,255,.3); }
     .tag.trade { background: rgba(243,210,122,.10); color: #f3d27a; border-color: rgba(243,210,122,.3); }
+    .buy-list { border: 1px solid rgba(255,107,122,.35); background: rgba(255,107,122,.06); border-radius: 10px; padding: 8px 10px; }
+    .buy-list ul { margin: 6px 0; padding-left: 18px; }
     .tag.buy { background: rgba(255,107,122,.10); color: #ffb3bb; border-color: rgba(255,107,122,.35); }
 
     .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
@@ -201,8 +203,15 @@
       el("div", {}, el("b", { textContent: `${sol.team_chemistry}/33` }), el("span", { textContent: "química" })),
       el("div", {}, el("b", { textContent: coins(sol.total_cost) }), el("span", { textContent: "moedas" }))));
 
+    if (result.notice) parts.push(el("div", { className: "warn", textContent: result.notice }));
     if (sol.to_buy?.length) {
-      parts.push(el("div", { className: "warn", textContent: `Comprar: ${sol.to_buy.map((b) => `${b.name} (${coins(b.price)})`).join(", ")}` }));
+      // Lista de compras: jogadores conceito que você compra à mão no mercado.
+      const buys = sol.squad.filter((s) => s.category === "market");
+      const total = buys.reduce((a, s) => a + (s.coin_cost ?? 0), 0);
+      parts.push(el("div", { className: "buy-list" },
+        el("b", { textContent: `Comprar no mercado (${buys.length}) · ~${coins(total)} moedas` }),
+        el("ul", {}, buys.map((s) => el("li", { textContent: `${s.slot_position} · ${s.name} (${s.rating}) · ~${coins(s.coin_cost)}` }))),
+        el("div", { className: "muted small", textContent: "Preços aproximados. \"Preencher\" coloca só os seus jogadores; os slots de compra ficam vazios. Depois de comprar, clique em Resolver de novo." })));
     }
     const reqs = (sol.requirements ?? []).filter((r) => !/^(Time completo|Sem jogador repetido)/.test(r.description));
     parts.push(el("ul", { className: "reqs" }, reqs.map((r) => el("li", { className: r.ok ? "ok" : "bad", textContent: `${r.description} (atual: ${r.actual})` }))));
@@ -231,9 +240,12 @@
     const { plan, error } = planModule.buildFillPlan(state.lastSolution, state);
     if (error) return setFillStatus(error, "err");
     const list = plan.slots.map((s) => `${s.position}: ${s.name} (${s.rating})`).join("\n");
+    const buy = plan.toBuy.length
+      ? `\n\nFicam VAZIOS (comprar no mercado):\n${plan.toBuy.map((b) => `${b.position}: ${b.name} (${b.rating})`).join("\n")}`
+      : "";
     const ok = confirm(
-      `Colocar estes ${plan.slots.length} jogadores no DME aberto?\n\n${list}\n\n` +
-      "O DME NÃO será enviado. Depois, recarregue o Web App (F5) para ver o time, confira e aperte Enviar você mesmo.",
+      `Colocar estes ${plan.slots.length} jogadores no DME aberto?\n\n${list}${buy}\n\n` +
+      "O DME NÃO será enviado. Confira na tela e aperte Enviar você mesmo.",
     );
     if (!ok) return setFillStatus("Cancelado.");
     setFillStatus("Preenchendo…");

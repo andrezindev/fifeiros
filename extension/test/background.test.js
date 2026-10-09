@@ -92,3 +92,27 @@ test("health", async () => {
   await loadBackground();
   assert.deepEqual(await send({ cmd: "solverHealth" }), { ok: true, busy: false, version: "0.1.0" });
 });
+
+test("antes de resolver, pergunta à aba qual DME está na tela", async () => {
+  const state = readyState();
+  state.challenges[777] = { ...state.challenges[555], challengeId: 777, name: "Outro DME" };
+  state.squads[777] = state.squads[555];
+  const { store, send } = setup({
+    state,
+    fetchImpl: async () => new Response(JSON.stringify({ status: "OPTIMAL", squad: [{}], sbc: "x" }), { status: 200 }),
+  });
+  const asked = [];
+  globalThis.chrome.tabs = {
+    // A aba responde depois de gravar o DME da tela (777, não o 555 que a rede viu).
+    sendMessage: async (tabId, msg) => {
+      asked.push([tabId, msg.cmd]);
+      store.currentChallengeId = 777;
+      return { known: true, challengeId: 777 };
+    },
+  };
+  await loadBackground();
+  const result = await send({ cmd: "solve", tabId: 9 });
+  assert.deepEqual(asked, [[9, "syncChallenge"]]);
+  assert.equal(result.challengeId, 777);
+  delete globalThis.chrome.tabs;
+});

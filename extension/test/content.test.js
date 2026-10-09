@@ -95,3 +95,29 @@ test("primeira vez que vê o desafio não conta como envio", async () => {
   await c.flush();
   assert.deepEqual(Object.keys(c.store.club), [String(a.id)]);
 });
+
+test("o DME da tela substitui o que a rede disse (cache do Web App)", async () => {
+  const c = makeContent({ currentChallengeId: 50 });
+  c.send({ type: "openChallenge", known: true, challengeId: 61, placedIds: ["7"], at: 1 });
+  await c.flush();
+  assert.equal(c.store.currentChallengeId, 61);
+  assert.deepEqual(c.store.screen.placedIds, ["7"]);
+  // Fora de qualquer DME: não há DME aberto.
+  c.send({ type: "openChallenge", known: true, challengeId: null, placedIds: [], at: 2 });
+  await c.flush();
+  assert.equal(c.store.currentChallengeId, null);
+  // Se não dá para ler a tela, mantém o que a rede disse.
+  c.send({ type: "capture", kind: "challengeSquad", challengeId: 70, data: {} });
+  c.send({ type: "openChallenge", known: false, at: 3 });
+  await c.flush();
+  assert.equal(c.store.currentChallengeId, 70);
+});
+
+test("conceito fica numa pilha separada do clube", async () => {
+  const c = makeContent({ club: {} });
+  c.send({ type: "capture", kind: "concept", items: [item({ concept: true })], request: { path: "/x" } });
+  await c.flush();
+  assert.equal(Object.keys(c.store.club).length, 0);
+  assert.equal(Object.keys(c.store.concept).length, 1);
+  assert.equal(c.store.diag.samples.concept.request.path, "/x");
+});

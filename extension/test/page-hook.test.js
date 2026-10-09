@@ -543,3 +543,70 @@ test("classifica DMEs, não atribuídos e banco de nomes", async () => {
   // Requisições fora da EA são ignoradas completamente.
   assert.ok(!page.posted.some((m) => m.type === "request" && /google/.test(m.path)));
 });
+
+// ---------- DME certo: o que está na TELA manda ----------
+
+test("lê da tela qual DME está aberto (e quem já está nele)", async () => {
+  const app = fakeWebAppFC27();
+  const page = makePage({ internals: app });
+  page.toPage("syncChallenge");
+  await page.until(() => page.posted.some((m) => m.type === "openChallenge"));
+  const open = page.posted.find((m) => m.type === "openChallenge");
+  assert.equal(open.known, true);
+  assert.equal(open.challengeId, 50);
+  assert.deepEqual([...open.placedIds], []);
+});
+
+test("sem o código do Web App, não inventa DME", async () => {
+  const page = makePage();
+  page.toPage("syncChallenge");
+  await page.until(() => page.posted.some((m) => m.type === "openChallenge"));
+  const open = page.posted.find((m) => m.type === "openChallenge");
+  assert.equal(open.known, false);
+});
+
+test("não preenche se o DME na tela é outro (nenhuma requisição)", async () => {
+  const app = fakeWebAppFC27();
+  const page = makePage({ internals: app, responses: { "/sbs/challenge/51/squad": {} } });
+  await page.appSearch();
+  await page.until(() => captures(page.posted, "club").length);
+  page.requests.length = 0;
+  page.toPage("fillSquad", { challengeId: 51, slots: [{ index: 1, itemId: "111" }] });
+  const r = await fillResult(page);
+  assert.equal(r.ok, false);
+  assert.match(r.error, /DME aberto na tela não é o desta solução/);
+  assert.equal(puts(page).length, 0);
+});
+
+// ---------- jogadores conceito ----------
+
+test("busca de conceito nunca entra no clube (vai para a lista de conceito)", async () => {
+  const page = makePage();
+  const owned = { id: 1, assetId: 501, itemType: "player", rating: 80 };
+  const conceptItem = { id: 2, assetId: 502, itemType: "player", rating: 82, concept: true };
+  page.setHandler(async (url) => (url.includes("/club")
+    ? new Response(JSON.stringify({ itemData: [owned, conceptItem] }), { status: 200 })
+    : null));
+  await page.fetch(`${BASE}/club`, { method: "POST", headers: { "X-UT-SID": SID }, body: JSON.stringify({ type: "player", start: 0, count: 20 }) });
+  await page.until(() => captures(page.posted, "concept").length);
+  assert.equal(JSON.stringify(captures(page.posted, "club")[0].items.map((i) => i.id)), "[1]");
+  assert.equal(JSON.stringify(captures(page.posted, "concept")[0].items.map((i) => i.id)), "[2]");
+  // Busca marcada como conceito: tudo vai para conceito e não vira modelo do carregador.
+  page.posted.length = 0;
+  await page.fetch(`${BASE}/club`, { method: "POST", headers: { "X-UT-SID": SID }, body: JSON.stringify({ type: "player", start: 0, count: 20, searchConcept: true }) });
+  await page.until(() => captures(page.posted, "concept").length);
+  assert.equal(captures(page.posted, "concept")[0].items.length, 2);
+  assert.ok(!captures(page.posted, "club").some((m) => m.items.length));
+  assert.ok(!JSON.stringify(page.posted).includes(SID));
+});
+
+test("outras buscas com jogadores ficam registradas no diagnóstico (sem token)", async () => {
+  const page = makePage({ responses: { "/some/search": { itemData: [{ id: 5, assetId: 9, rating: 70 }] } } });
+  await page.fetch(`${BASE}/some/search?type=player&lev=gold`, { headers: { "X-UT-SID": SID } });
+  await page.until(() => page.posted.some((m) => m.type === "itemSearchSeen"));
+  const seen = page.posted.find((m) => m.type === "itemSearchSeen");
+  assert.equal(seen.path, "/some/search");
+  assert.equal(seen.request.query.lev, "gold");
+  assert.equal(seen.sample.length, 1);
+  assert.ok(!JSON.stringify(page.posted).includes(SID));
+});

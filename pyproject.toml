@@ -7,7 +7,8 @@ name = "sbc-solver"
 version = "0.1.0"
 description = "Solver de DMEs (Squad Building Challenges) do EA FC Ultimate Team"
 requires-python = ">=3.11"
-dependencies = ["ortools>=9.10"]
+# ortools 9.15 tem DLLs bloqueadas pelo Smart App Control do Windows 11.
+dependencies = ["ortools>=9.10,<9.15"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "jsonschema>=4"]

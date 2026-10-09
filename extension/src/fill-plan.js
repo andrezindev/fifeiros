@@ -16,9 +16,6 @@ export function buildFillPlan(result, state) {
   if ((sol.warnings ?? []).length) {
     return { error: "O DME tem requisitos que a extensão não entendeu. Monte à mão para não errar." };
   }
-  if ((sol.to_buy ?? []).length) {
-    return { error: "A solução precisa de compras; a extensão só preenche com jogadores do seu clube." };
-  }
   const slotIndices = result.slotIndices;
   if (!Array.isArray(slotIndices) || slotIndices.length !== sol.squad.length) {
     return { error: "Solução antiga, sem a ordem dos slots. Clique em Resolver de novo." };
@@ -28,13 +25,19 @@ export function buildFillPlan(result, state) {
     ["club", "unassigned", "storage"].flatMap((k) => Object.keys(state[k] ?? {})),
   );
   const locked = lockedInOtherSbcs(state);
-  const slots = sol.squad.map((s) => ({
+  const all = sol.squad.map((s) => ({
     index: slotIndices[s.slot],
     itemId: String(s.player_id),
     name: s.name,
     rating: s.rating,
     position: s.slot_position,
+    buy: s.category === "market",
+    price: s.coin_cost ?? 0,
   }));
+  // Jogadores conceito: o slot fica vazio e vai para a lista de compras.
+  const toBuy = all.filter((s) => s.buy).map(({ name, rating, position, price }) => ({ name, rating, position, price }));
+  const slots = all.filter((s) => !s.buy).map(({ index, itemId, name, rating, position }) => ({ index, itemId, name, rating, position }));
+  if (!slots.length) return { error: "Todos os jogadores desta solução precisam ser comprados. Compre-os e clique em Resolver de novo." };
 
   const missing = slots.filter((s) => !owned.has(s.itemId));
   if (missing.length) {
@@ -46,5 +49,5 @@ export function buildFillPlan(result, state) {
   }
   if (new Set(slots.map((s) => s.index)).size !== slots.length) return { error: "Slots repetidos na solução." };
 
-  return { plan: { challengeId: result.challengeId, slots } };
+  return { plan: { challengeId: result.challengeId, slots, toBuy } };
 }

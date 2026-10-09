@@ -55,7 +55,7 @@ No popup, em **Opções do solver** (ficam salvas):
 | Somente não negociáveis | Não usa negociáveis do clube |
 | Excluir atletas do elenco ativo | Não usa ninguém do seu time titular/reservas |
 | Usar cartas de evento | Permite usar cartas especiais (protegidas por padrão) |
-| Usar atletas de conceito | Em breve (precisa da lista do mercado) |
+| Usar atletas de conceito | Completa o que falta com o conceito mais barato; o painel lista o que comprar e o "Preencher" deixa esses slots vazios |
 
 "Ignorar posição" não é necessário: o solver só considera posição quando o DME
 pede química.

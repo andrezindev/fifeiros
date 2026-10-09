@@ -23,7 +23,7 @@ const baseState = (extra = {}) => {
 test("padrões: sem limite de overall, menor custo, pode usar negociáveis", () => {
   assert.deepEqual(toSolverOptions({}), {
     min_rating: null, max_rating: null, untradeable_value: 0.3,
-    allow_special: false, allow_tradeable: true, time_limit_s: 10,
+    allow_special: false, allow_tradeable: true, allow_market: false, time_limit_s: 10,
   });
 });
 
@@ -82,4 +82,11 @@ test("sem escalação conhecida da extensão, usa a que o Web App baixou (só os
     ] } } },
   };
   assert.deepEqual(placedInOpenSbc(state), ["111"]);
+});
+
+test("quem está no DME na TELA vale mais que o último salvar visto", () => {
+  const state = { currentChallengeId: 50, lastSquadIds: { 50: ["1"] }, screen: { challengeId: 50, placedIds: ["2", "3"] } };
+  assert.deepEqual(placedInOpenSbc(state), ["2", "3"]);
+  state.screen.challengeId = 49; // tela de outro DME: ignora
+  assert.deepEqual(placedInOpenSbc(state), ["1"]);
 });

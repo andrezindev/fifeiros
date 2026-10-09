@@ -77,7 +77,7 @@ export function normalizeItem(raw, ctx = {}) {
     is_duplicate: isDuplicate,
     market_price: price,
   };
-  if (source !== "club") player.unassigned = true;
+  if (source === "unassigned" || source === "storage") player.unassigned = true;
   if (Number(league) === ICON_LEAGUE_ID || Number(rareflag) === ICON_RAREFLAG) player.is_icon = true;
   if (Number(rareflag) === HERO_RAREFLAG || Number(club) === HERO_CLUB_ID) player.is_hero = true;
   return { player };
@@ -95,6 +95,7 @@ export function lockedInOtherSbcs(state) {
   const all = toIdSet(state.sbcHub?.squadPlayerItemIds);
   const current = state.squads?.[state.currentChallengeId];
   const here = toIdSet((current?.squad?.players ?? current?.players ?? []).map((p) => p?.itemData?.id));
+  if (state.screen && state.screen.challengeId === state.currentChallengeId) toIdSet(state.screen.placedIds).forEach((id) => here.add(id));
   return new Set([...all].filter((id) => !here.has(id)));
 }
 
@@ -127,6 +128,31 @@ export function buildClub(state) {
       seen.add(player.id);
       players.push(player);
     }
+  }
+  return { data: { players }, skipped };
+}
+
+/**
+ * Jogadores "conceito" -> lista de mercado do solver (precisa comprar).
+ * Preço: média de mercado da EA quando vem; senão, estimativa pelo overall
+ * (marcada com price_estimated).
+ */
+export function buildMarket(state) {
+  const names = state.names ?? {};
+  const players = [];
+  const skipped = {};
+  const seen = new Set();
+  for (const raw of Object.values(state.concept ?? {})) {
+    const { player, skip } = normalizeItem({ ...raw, loans: undefined, untradeable: false }, { source: "market", names });
+    if (skip) {
+      skipped[skip] = (skipped[skip] ?? 0) + 1;
+      continue;
+    }
+    if (seen.has(player.definition_id)) continue;
+    seen.add(player.definition_id);
+    player.id = `conceito-${player.definition_id}`;
+    player.price_estimated = !(Number(raw.marketAverage ?? 0) > 0);
+    players.push(player);
   }
   return { data: { players }, skipped };
 }

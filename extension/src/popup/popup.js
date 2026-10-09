@@ -60,7 +60,10 @@ async function render() {
   $("n-club").textContent = s.counts.club.toLocaleString("pt-BR");
   $("n-unassigned").textContent = s.counts.unassigned.toLocaleString("pt-BR");
   $("n-storage").textContent = s.counts.storage.toLocaleString("pt-BR");
-  $("n-names").textContent = s.counts.names.toLocaleString("pt-BR");
+  $("n-concept").textContent = s.counts.concept.toLocaleString("pt-BR");
+  $("concept-hint").textContent = s.counts.concept
+    ? `${s.counts.concept.toLocaleString("pt-BR")} jogadores conceito conhecidos. Faltando no clube, o solver completa com o mais barato e o painel lista o que comprar.`
+    : "Para usar: no Web App, faça uma busca de jogadores conceito (ex.: ao adicionar jogador num DME). A extensão aprende com o que aparecer.";
   renderLoader(s.loader, s.templateInfo);
 
   $("sbc-name").textContent = s.sbc
@@ -185,6 +188,7 @@ async function loadOptions() {
   $("opt-untradeable").checked = saved.only_untradeable ?? (saved.allow_tradeable === false);
   $("opt-active").checked = o.exclude_active;
   $("opt-special").checked = o.allow_special;
+  $("opt-market").checked = Boolean(o.allow_market);
 }
 
 async function saveOptions() {
@@ -198,6 +202,7 @@ async function saveOptions() {
       only_untradeable: $("opt-untradeable").checked,
       exclude_active: $("opt-active").checked,
       allow_special: $("opt-special").checked,
+      allow_market: $("opt-market").checked,
     },
   });
 }
@@ -221,7 +226,7 @@ for (const id of ["opt-min", "opt-max"]) {
     saveOptions();
   });
 }
-for (const id of ["opt-priority", "opt-replace", "opt-untradeable", "opt-active", "opt-special"]) {
+for (const id of ["opt-priority", "opt-replace", "opt-untradeable", "opt-active", "opt-special", "opt-market"]) {
   $(id).addEventListener("change", saveOptions);
 }
 $("btn-reset-opts").addEventListener("click", async () => {
@@ -250,7 +255,7 @@ $("btn-solve").addEventListener("click", async () => {
     showSolveError("⚠ A página do Web App está com a versão antiga da extensão. Aperte F5 no Web App e tente de novo.");
     return;
   }
-  chrome.runtime.sendMessage({ cmd: "solve" }).catch(() => {});
+  chrome.runtime.sendMessage({ cmd: "solve", tabId: tab.id }).catch(() => {});
 });
 $("btn-panel").addEventListener("click", () => {
   if (tab) chrome.tabs.sendMessage(tab.id, { cmd: "showPanel" }).catch(() => message("Recarregue o Web App (F5)."));

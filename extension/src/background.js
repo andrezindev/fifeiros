@@ -17,7 +17,7 @@ async function health() {
 async function solveOpenSbc() {
   const state = await chrome.storage.local.get(null);
   const base = { at: Date.now(), challengeId: state.currentChallengeId ?? null };
-  const { request, error } = buildSolveRequest(state);
+  const { request, error, notice } = buildSolveRequest(state);
   if (error) return { ...base, error };
   const { options } = request;
   try {
@@ -31,7 +31,7 @@ async function solveOpenSbc() {
     const body = await r.json();
     if (!r.ok) return { ...base, error: body.error ?? `O solver respondeu ${r.status}.` };
     // slotIndices: slot da EA de cada posição da solução (para preencher na Fase 4).
-    return { ...base, solution: body, options, slotIndices: request.sbc.ea?.slotIndices ?? null };
+    return { ...base, solution: body, options, notice: notice ?? null, slotIndices: request.sbc.ea?.slotIndices ?? null };
   } catch (e) {
     const offline = e?.name === "TypeError" || e?.name === "AbortError" || e?.name === "TimeoutError";
     return {
@@ -45,14 +45,19 @@ async function solveOpenSbc() {
 
 let running = null; // evita dois "Resolver" ao mesmo tempo
 
-chrome.runtime.onMessage.addListener((msg, _sender, reply) => {
+chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   if (msg?.cmd === "solverHealth") {
     health().then(reply);
     return true;
   }
   if (msg?.cmd === "solve") {
+    const tabId = msg.tabId ?? sender?.tab?.id ?? null;
     running ??= (async () => {
       await chrome.storage.local.set({ lastSolution: { running: true, at: Date.now() } });
+      // Confere na tela qual DME está aberto (o cache do Web App pode enganar a rede).
+      if (tabId !== null && chrome.tabs?.sendMessage) {
+        await chrome.tabs.sendMessage(tabId, { cmd: "syncChallenge" }).catch(() => null);
+      }
       const result = await solveOpenSbc();
       await chrome.storage.local.set({ lastSolution: result });
       return result;

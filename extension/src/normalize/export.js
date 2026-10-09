@@ -50,6 +50,7 @@ export function summarize(state) {
       unassigned: Object.keys(state.unassigned ?? {}).length,
       storage: Object.keys(state.storage ?? {}).length,
       names: Object.keys(state.names ?? {}).length,
+      concept: Object.keys(state.concept ?? {}).length,
     },
     sbc,
     sbcWarnings,

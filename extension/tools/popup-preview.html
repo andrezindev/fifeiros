@@ -20,6 +20,8 @@
       { type: "SCOPE", eligibilitySlot: 2, eligibilityValue: 0 }, { type: "LEAGUE_ID", eligibilitySlot: 2, eligibilityValue: 13, count: 3 },
       { type: "SCOPE", eligibilitySlot: 3, eligibilityValue: 1 }, { type: "SAME_CLUB_COUNT", eligibilitySlot: 3, eligibilityValue: 3 },
       { type: "FIRST_OWNER_PLAYERS_COUNT", eligibilitySlot: 4, eligibilityValue: 2 } ] } },
+    concept: Object.fromEntries(Array.from({ length: 312 }, (_, i) => [5000 + i, item(5000 + i, { concept: true })])),
+    solverOptions: { allow_market: true },
     squads: {}, currentChallengeId: 555,
     loader: { running: false, pages: 2, items: 147, finishedAt: Date.now() },
     lastSolution: { challengeId: 555, solution: { squad: [{}], team_rating: 79, team_chemistry: 18, total_cost: 1550 } },

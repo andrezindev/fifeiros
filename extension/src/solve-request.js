@@ -2,11 +2,14 @@
 // Função pura: usada pelo background e pelos testes de ponta a ponta.
 
 import { buildClub, summarize } from "./normalize/export.js";
+import { buildMarket } from "./normalize/players.js";
 import { DEFAULT_OPTIONS, toSolverOptions } from "./solver-config.js";
 
 /** Ids dos jogadores já colocados no DME aberto (só os 11 slots de campo). */
 export function placedInOpenSbc(state) {
   const cid = state.currentChallengeId;
+  // O que está na tela agora vale mais que o último "salvar" visto.
+  if (state.screen && state.screen.challengeId === cid && Array.isArray(state.screen.placedIds)) return state.screen.placedIds.map(String);
   const known = state.lastSquadIds?.[cid];
   if (Array.isArray(known)) return known.map(String);
   const players = state.squads?.[cid]?.squad?.players ?? [];
@@ -16,7 +19,7 @@ export function placedInOpenSbc(state) {
     .filter((id) => id !== "0");
 }
 
-/** Devolve { request } pronto para POST /solve, ou { error } com mensagem para o usuário. */
+/** Devolve { request, notice? } pronto para POST /solve, ou { error } com mensagem para o usuário. */
 export function buildSolveRequest(state) {
   const { sbc, sbcWarnings } = summarize(state);
   if (!sbc) return { error: sbcWarnings[0] ?? "Nenhum DME aberto. Abra um desafio no Web App." };
@@ -35,5 +38,12 @@ export function buildSolveRequest(state) {
     return { error: "Nenhum jogador capturado. Abra o clube e use \"Carregar clube inteiro\"." };
   }
   const options = { ...toSolverOptions(ui), required_players: required };
-  return { request: { club: { players }, sbc, options } };
+  const request = { club: { players }, sbc, options };
+  let notice = null;
+  if (options.allow_market) {
+    const market = buildMarket(state).data.players;
+    if (market.length) request.market = { players: market };
+    else notice = "Nenhum jogador conceito capturado ainda: resolvi só com o seu clube.";
+  }
+  return { request, notice };
 }

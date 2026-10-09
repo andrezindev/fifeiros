@@ -101,7 +101,18 @@ Ficam no popup, em **Opções do solver**, e são salvas automaticamente.
 | **Somente não negociáveis** | Não usa os negociáveis do clube |
 | **Excluir atletas do elenco ativo** | Não usa ninguém do seu time titular nem dos reservas |
 | **Usar cartas de evento** | Permite gastar cartas especiais (por padrão ficam protegidas) |
-| **Usar atletas de conceito** | Em breve (precisa dos preços do mercado) |
+| **Usar atletas de conceito** | Se faltar jogador no clube, completa com o jogador **conceito mais barato** e o painel mostra a **lista de compras** (você compra à mão) |
+
+**Jogadores conceito:** a extensão aprende os jogadores conceito com as buscas
+de conceito que você faz no próprio Web App (ex.: ao adicionar jogador num DME),
+sem nenhuma requisição extra. O preço é a média de mercado da EA quando ela
+manda; senão, uma estimativa pelo overall. O solver sempre usa primeiro o que
+você tem e só "compra" o que falta. No **Preencher**, os slots de compra ficam
+vazios: compre os jogadores e clique em **Resolver** de novo.
+
+**DME certo:** a extensão confere na tela do Web App qual DME está aberto antes
+de resolver e de preencher. Se você trocar de DME, ela acompanha; se a solução
+for de outro DME, o preenchimento é bloqueado.
 
 **Como o solver escolhe "o mais barato":** duplicados intransferíveis primeiro
 (não servem para mais nada), depois intransferíveis, depois negociáveis (pelo
@@ -131,6 +142,7 @@ resolveria.
 |---|---|
 | Ponto vermelho "Solver desligado" | Dê dois cliques em `iniciar-solver.bat` e deixe a janela aberta |
 | `iniciar-solver.bat` diz "Ambiente Python não encontrado" | Rode `instalar.bat` primeiro |
+| Erro "Uma política de Controle de Aplicativo bloqueou este arquivo" | O Smart App Control do Windows 11 bloqueia o OR-Tools 9.15. O projeto já usa a 9.14; rode `instalar.bat` de novo para trocar a versão |
 | "Resolver" diz que a página está com a versão antiga | Aperte **F5** no Web App |
 | Clube aparece com 0 jogadores | Abra *Clube › Jogadores* sem filtros e clique em **Carregar clube inteiro** |
 | "Sem solução" | O painel explica o motivo (ex.: falta jogador de uma liga, overall impossível com a faixa escolhida). Ajuste as opções ou o clube |
@@ -306,5 +318,6 @@ conferência de cada requisito e, quando não há solução, `reason` + `diagnos
 - O formato dos dados do Web App não é documentado pela EA; a extensão pode
   quebrar quando a EA atualizar o app. O diagnóstico ajuda a corrigir.
 - Química: técnico (+1 liga/nação) e boosts de promoções não são considerados.
-- Ainda não feito: resolver vários DMEs de um grupo juntos, sugestões de compra
-  no mercado e "atletas de conceito".
+- Jogadores conceito: só os que a extensão já viu nas suas buscas de conceito
+  no Web App; preços sem média da EA são estimados.
+- Ainda não feito: resolver vários DMEs de um grupo juntos.
